@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Name Saver (Cloud)</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; }
+    input, button { padding: 10px; margin: 6px 0; }
+    #output { margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <h2>Name Entry Website (Cloud)</h2>
+
+  <input id="nameInput" type="text" placeholder="Enter your name" />
+  <br />
+  <button id="saveBtn">Enter / Save</button>
+  <button id="loadBtn">Load</button>
+
+  <div id="output"></div>
+
+  <!-- Firebase SDK (CDN) -->
+  <script type="module">
+    // 1) Firebase imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      query,
+      orderBy,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    // 2) PASTE YOUR FIREBASE CONFIG HERE (from Firebase Console)
+    const firebaseConfig = {
+  apiKey: "AIzaSyBZ2GFA4Nx2wDoYE0sMW6L4F1K67XVx7OI",
+  authDomain: "sacstr-80568.firebaseapp.com",
+  projectId: "sacstr-80568",
+  storageBucket: "sacstr-80568.firebasestorage.app",
+  messagingSenderId: "366737001968",
+  appId: "1:366737001968:web:5ccafd826a172cf9a7e135",
+  measurementId: "G-QQW68FNL3L"
+    };
+
+    // 3) Init
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const nameInput = document.getElementById("nameInput");
+    const output = document.getElementById("output");
+
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+      const name = nameInput.value.trim();
+      if (!name) {
+        alert("Please enter a name");
+        return;
+      }
+
+      // Save to cloud DB
+      await addDoc(collection(db, "names"), {
+        name,
+        createdAt: serverTimestamp()
+      });
+
+      nameInput.value = "";
+      alert("Name saved in cloud successfully");
+    });
+
+    document.getElementById("loadBtn").addEventListener("click", async () => {
+      output.innerHTML = "Loading...";
+
+      const q = query(collection(db, "names"), orderBy("createdAt", "asc"));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        output.innerHTML = "<h3>Saved Names:</h3>No names saved yet.";
+        return;
+      }
+
+      let html = "<h3>Saved Names:</h3><ul>";
+      snap.forEach((doc) => {
+        html += `<li>${escapeHtml(doc.data().name || "")}</li>`;
+      });
+      html += "</ul>";
+
+      output.innerHTML = html;
+    });
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
